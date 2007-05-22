@@ -8,7 +8,7 @@
 
 Name:           listtools
 Version:        1.0
-Release:        %mkrel 1
+Release:        %mkrel 2
 Epoch:          0
 Summary:        C P2P List Library
 URL:            http://peerguardian.sourceforge.net/
