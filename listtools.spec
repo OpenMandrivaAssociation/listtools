@@ -8,7 +8,7 @@
 
 Name:           listtools
 Version:        1.0
-Release:        %mkrel 2
+Release:        %mkrel 3
 Epoch:          0
 Summary:        C P2P List Library
 URL:            http://peerguardian.sourceforge.net/
@@ -61,6 +61,7 @@ libp2p applications.
 %build
 %{configure2_5x}
 %{make}
+%{_bindir}/doxygen
 
 %install
 %{__rm} -rf %{buildroot}
@@ -90,6 +91,7 @@ libp2p applications.
 
 %files -n %{lib_name_devel}
 %defattr(0644,root,root,0755)
+%doc Docs/html
 %dir %{_includedir}/p2p
 %{_includedir}/p2p/*.hpp
 %attr(0755,root,root) %{_libdir}/libp2p.so
