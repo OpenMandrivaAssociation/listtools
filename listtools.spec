@@ -8,7 +8,7 @@
 
 Name:           listtools
 Version:        1.0
-Release:        %mkrel 5
+Release:        %mkrel 6
 Epoch:          0
 Summary:        C P2P List Library
 URL:            http://peerguardian.sourceforge.net/
@@ -19,6 +19,7 @@ Group:          System/Libraries
 BuildRequires:  doxygen
 BuildRequires:  libboost-devel
 BuildRequires:  libmysql-devel
+BuildRequires:  tetex
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %description
@@ -61,7 +62,7 @@ libp2p applications.
 %build
 %{configure2_5x}
 %{make}
-%{_bindir}/doxygen
+%{make} doxygen-doc
 
 %install
 %{__rm} -rf %{buildroot}
