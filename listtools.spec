@@ -8,9 +8,9 @@
 
 Name:           listtools
 Version:        1.0
-Release:        %mkrel 7
+Release:        %mkrel 8
 Epoch:          0
-Summary:        C P2P List Library
+Summary:        P2P List Library
 URL:            http://peerguardian.sourceforge.net/
 Source0:        %{name}-%{version}.tar.bz2
 Patch0:         %{name}-unix.patch
@@ -23,7 +23,7 @@ BuildRequires:  tetex
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %description
-C P2P List Library.
+P2P List Library.
 
 %package -n %{lib_name}
 Summary:        Main library for the libp2p library
