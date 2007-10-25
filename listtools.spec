@@ -1,14 +1,11 @@
 %define lib_major                       0
-%define lib_name_orig                   %mklibname p2p
-%define lib_name_orig_devel             %mklibname p2p -d
-%define lib_name_orig_static_devel      %mklibname p2p -d -s
-%define lib_name                        %mklibname p2p %{lib_major}
-%define lib_name_devel                  %mklibname p2p %{lib_major} -d
-%define lib_name_static_devel           %mklibname p2p %{lib_major} -d -s
+%define lib_name                        %{mklibname p2p %{lib_major}}
+%define lib_name_devel                  %{mklibname p2p %{lib_major} -d}
+%define lib_name_static_devel           %{mklibname p2p %{lib_major} -d -s}
 
 Name:           listtools
 Version:        1.0
-Release:        %mkrel 8
+Release:        %mkrel 9
 Epoch:          0
 Summary:        P2P List Library
 URL:            http://peerguardian.sourceforge.net/
@@ -36,8 +33,7 @@ linked with the libp2p library.
 %package -n %{lib_name_devel}
 Group:          Development/C++
 Summary:        Shared libraries and header files for the libp2p library
-Provides:       %{name}-devel = %{epoch}:%{version}-%{release}
-Provides:       %{lib_name_orig_devel} = %{epoch}:%{version}-%{release}
+Provides:       p2p-devel = %{epoch}:%{version}-%{release}
 Requires:       %{lib_name} = %{epoch}:%{version}-%{release}
 
 %description -n %{lib_name_devel}
@@ -47,7 +43,7 @@ needed for developing libp2p applications.
 %package -n %{lib_name_static_devel}
 Group:          Development/C++
 Summary:        Static libraries for the libp2p library
-Provides:       %{lib_name_orig_static_devel} = %{epoch}:%{version}-%{release}
+Provides:       p2p-static-devel = %{epoch}:%{version}-%{release}
 Requires:       %{lib_name_devel} = %{epoch}:%{version}-%{release}
 
 %description -n %{lib_name_static_devel}
@@ -66,7 +62,7 @@ libp2p applications.
 
 %install
 %{__rm} -rf %{buildroot}
-%{makeinstall}
+%{makeinstall_std}
 
 %check
 %{make} check
