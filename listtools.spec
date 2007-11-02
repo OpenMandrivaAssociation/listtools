@@ -5,7 +5,7 @@
 
 Name:           listtools
 Version:        1.0
-Release:        %mkrel 9
+Release:        %mkrel 10
 Epoch:          0
 Summary:        P2P List Library
 URL:            http://peerguardian.sourceforge.net/
@@ -14,8 +14,8 @@ Patch0:         %{name}-unix.patch
 License:        BSD-style
 Group:          System/Libraries
 BuildRequires:  doxygen
-BuildRequires:  libboost-devel
-BuildRequires:  libmysql-devel
+BuildRequires:  boost-devel
+BuildRequires:  mysql-devel
 BuildRequires:  tetex
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
