@@ -17,7 +17,6 @@ BuildRequires:  doxygen
 BuildRequires:  boost-devel
 BuildRequires:  mysql-devel
 BuildRequires:  tetex
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %description
 P2P List Library.
