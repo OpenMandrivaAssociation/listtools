@@ -11,6 +11,8 @@ Summary:        P2P List Library
 URL:            http://peerguardian.sourceforge.net/
 Source0:        %{name}-%{version}.tar.bz2
 Patch0:         %{name}-unix.patch
+Patch1:		listtools-exception-ambiguity.patch
+Patch2:		listtools-missing-include.patch
 License:        BSD
 Group:          System/Libraries
 BuildRequires:  doxygen
@@ -54,7 +56,7 @@ libp2p applications.
 
 %prep
 %setup -q -n %{name}
-%patch0 -p1
+%apply_patches
 %{_bindir}/autoreconf -f --verbose -i
 
 %build
