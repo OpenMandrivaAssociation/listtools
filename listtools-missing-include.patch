@@ -1,0 +1,10 @@
+Index: listtools/mergep2p/mergep2p.cpp
+===================================================================
+--- listtools/mergep2p/mergep2p.cpp
++++ listtools/mergep2p/mergep2p.cpp	2010-02-08 18:04:19.517071134 +0200
+@@ -1,4 +1,5 @@
+ #include <iostream>
++#include <cstring>
+ #include <p2p/list.hpp>
+ using namespace p2p;
+ 

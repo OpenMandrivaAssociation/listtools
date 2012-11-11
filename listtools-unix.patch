@@ -1,0 +1,1715 @@
+diff -uNr listtools.orig/Makefile.am listtools/Makefile.am
+--- listtools.orig/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/Makefile.am	2007-05-22 07:04:53.000000000 +0200
+@@ -0,0 +1,4 @@
++AUTOMAKE_OPTIONS = 1.9.6 dist-bzip2 foreign
++EXTRA_DIST = Doxyfile listtools.sln p2b.txt
++SUBDIRS = libp2p dumpp2p filterp2p genallow mergep2p
++include aminclude.am
+diff -uNr listtools.orig/acinclude.m4 listtools/acinclude.m4
+--- listtools.orig/acinclude.m4	1970-01-01 01:00:00.000000000 +0100
++++ listtools/acinclude.m4	2007-05-22 03:35:35.000000000 +0200
+@@ -0,0 +1,6 @@
++m4_include([ax_boost_base.m4])
++m4_include([ax_boost_regex.m4])
++m4_include([ax_cflags_warn_all.m4])
++m4_include([ax_lib_mysql.m4])
++m4_include([ax_prog_doxygen.m4])
++
+diff -uNr listtools.orig/aminclude.am listtools/aminclude.am
+--- listtools.orig/aminclude.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/aminclude.am	2007-05-22 07:06:34.000000000 +0200
+@@ -0,0 +1,156 @@
++## --------------------------------- ##
++## Format-independent Doxygen rules. ##
++## --------------------------------- ##
++
++if DX_COND_doc
++
++## ------------------------------- ##
++## Rules specific for HTML output. ##
++## ------------------------------- ##
++
++if DX_COND_html
++
++DX_CLEAN_HTML = @DX_DOCDIR@/html
++
++endif DX_COND_html
++
++## ------------------------------ ##
++## Rules specific for CHM output. ##
++## ------------------------------ ##
++
++if DX_COND_chm
++
++DX_CLEAN_CHM = @DX_DOCDIR@/chm
++
++if DX_COND_chi
++
++DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
++
++endif DX_COND_chi
++
++endif DX_COND_chm
++
++## ------------------------------ ##
++## Rules specific for MAN output. ##
++## ------------------------------ ##
++
++if DX_COND_man
++
++DX_CLEAN_MAN = @DX_DOCDIR@/man
++
++endif DX_COND_man
++
++## ------------------------------ ##
++## Rules specific for RTF output. ##
++## ------------------------------ ##
++
++if DX_COND_rtf
++
++DX_CLEAN_RTF = @DX_DOCDIR@/rtf
++
++endif DX_COND_rtf
++
++## ------------------------------ ##
++## Rules specific for XML output. ##
++## ------------------------------ ##
++
++if DX_COND_xml
++
++DX_CLEAN_XML = @DX_DOCDIR@/xml
++
++endif DX_COND_xml
++
++## ----------------------------- ##
++## Rules specific for PS output. ##
++## ----------------------------- ##
++
++if DX_COND_ps
++
++DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE@.ps
++
++DX_PS_GOAL = doxygen-ps
++
++doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
++
++@DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
++	cd @DX_DOCDIR@/latex; \
++	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
++	$(DX_LATEX) refman.tex; \
++	$(MAKEINDEX_PATH) refman.idx; \
++	$(DX_LATEX) refman.tex; \
++	countdown=5; \
++	while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
++ 			   refman.log > /dev/null 2>&1 \
++	   && test $$countdown -gt 0; do \
++	    $(DX_LATEX) refman.tex; \
++	    countdown=`expr $$countdown - 1`; \
++	done; \
++	$(DX_DVIPS) -o ../@PACKAGE@.ps refman.dvi
++
++endif DX_COND_ps
++
++## ------------------------------ ##
++## Rules specific for PDF output. ##
++## ------------------------------ ##
++
++if DX_COND_pdf
++
++DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
++
++DX_PDF_GOAL = doxygen-pdf
++
++doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
++
++@DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
++	cd @DX_DOCDIR@/latex; \
++	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
++	$(DX_PDFLATEX) refman.tex; \
++	$(DX_MAKEINDEX) refman.idx; \
++	$(DX_PDFLATEX) refman.tex; \
++	countdown=5; \
++	while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
++ 			   refman.log > /dev/null 2>&1 \
++	   && test $$countdown -gt 0; do \
++	    $(DX_PDFLATEX) refman.tex; \
++	    countdown=`expr $$countdown - 1`; \
++	done; \
++	mv refman.pdf ../@PACKAGE@.pdf
++
++endif DX_COND_pdf
++
++## ------------------------------------------------- ##
++## Rules specific for LaTeX (shared for PS and PDF). ##
++## ------------------------------------------------- ##
++
++if DX_COND_latex
++
++DX_CLEAN_LATEX = @DX_DOCDIR@/latex
++
++endif DX_COND_latex
++
++.PHONY: doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
++
++.INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
++
++doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
++
++doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
++
++@DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
++	rm -rf @DX_DOCDIR@
++	$(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
++
++DX_CLEANFILES = \
++    @DX_DOCDIR@/@PACKAGE@.tag \
++    -r \
++    $(DX_CLEAN_HTML) \
++    $(DX_CLEAN_CHM) \
++    $(DX_CLEAN_CHI) \
++    $(DX_CLEAN_MAN) \
++    $(DX_CLEAN_RTF) \
++    $(DX_CLEAN_XML) \
++    $(DX_CLEAN_PS) \
++    $(DX_CLEAN_PDF) \
++    $(DX_CLEAN_LATEX)
++
++endif DX_COND_doc
+diff -uNr listtools.orig/ax_boost_base.m4 listtools/ax_boost_base.m4
+--- listtools.orig/ax_boost_base.m4	1970-01-01 01:00:00.000000000 +0100
++++ listtools/ax_boost_base.m4	2007-03-15 22:17:40.000000000 +0100
+@@ -0,0 +1,198 @@
++##### http://autoconf-archive.cryp.to/ax_boost_base.html
++#
++# SYNOPSIS
++#
++#   AX_BOOST_BASE([MINIMUM-VERSION])
++#
++# DESCRIPTION
++#
++#   Test for the Boost C++ libraries of a particular version (or newer)
++#
++#   If no path to the installed boost library is given the macro
++#   searchs under /usr, /usr/local, and /opt, and evaluates the
++#   $BOOST_ROOT environment variable. Further documentation is
++#   available at <http://randspringer.de/boost/index.html>.
++#
++#   This macro calls:
++#
++#     AC_SUBST(BOOST_CPPFLAGS) / AC_SUBST(BOOST_LDFLAGS)
++#
++#   And sets:
++#
++#     HAVE_BOOST
++#
++# LAST MODIFICATION
++#
++#   2007-03-15
++#
++# COPYLEFT
++#
++#   Copyright (c) 2007 Thomas Porschberg <thomas@randspringer.de>
++#
++#   Copying and distribution of this file, with or without
++#   modification, are permitted in any medium without royalty provided
++#   the copyright notice and this notice are preserved.
++
++AC_DEFUN([AX_BOOST_BASE],
++[
++AC_ARG_WITH([boost],
++	AS_HELP_STRING([--with-boost@<:@=DIR@:>@], [use boost (default is yes) - it is possible to specify the root directory for boost (optional)]),
++	[
++    if test "$withval" = "no"; then
++		want_boost="no"
++    elif test "$withval" = "yes"; then
++        want_boost="yes"
++        ac_boost_path=""
++    else
++	    want_boost="yes"
++        ac_boost_path="$withval"
++	fi
++    ],
++    [want_boost="yes"])
++
++if test "x$want_boost" = "xyes"; then
++	boost_lib_version_req=ifelse([$1], ,1.20.0,$1)
++	boost_lib_version_req_shorten=`expr $boost_lib_version_req : '\([[0-9]]*\.[[0-9]]*\)'`
++	boost_lib_version_req_major=`expr $boost_lib_version_req : '\([[0-9]]*\)'`
++	boost_lib_version_req_minor=`expr $boost_lib_version_req : '[[0-9]]*\.\([[0-9]]*\)'`
++	boost_lib_version_req_sub_minor=`expr $boost_lib_version_req : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
++	if test "x$boost_lib_version_req_sub_minor" = "x" ; then
++		boost_lib_version_req_sub_minor="0"
++    	fi
++	WANT_BOOST_VERSION=`expr $boost_lib_version_req_major \* 100000 \+  $boost_lib_version_req_minor \* 100 \+ $boost_lib_version_req_sub_minor`
++	AC_MSG_CHECKING(for boostlib >= $boost_lib_version_req)
++	succeeded=no
++
++	dnl first we check the system location for boost libraries
++	dnl this location ist chosen if boost libraries are installed with the --layout=system option
++	dnl or if you install boost with RPM
++	if test "$ac_boost_path" != ""; then
++		BOOST_LDFLAGS="-L$ac_boost_path/lib"
++		BOOST_CPPFLAGS="-I$ac_boost_path/include"
++	else
++		for ac_boost_path_tmp in /usr /usr/local /opt ; do
++			if test -d "$ac_boost_path_tmp/include/boost" && test -r "$ac_boost_path_tmp/include/boost"; then
++				BOOST_LDFLAGS="-L$ac_boost_path_tmp/lib"
++				BOOST_CPPFLAGS="-I$ac_boost_path_tmp/include"
++				break;
++			fi
++		done
++	fi
++
++	CPPFLAGS_SAVED="$CPPFLAGS"
++	CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
++	export CPPFLAGS
++
++	LDFLAGS_SAVED="$LDFLAGS"
++	LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
++	export LDFLAGS
++
++	AC_LANG_PUSH(C++)
++     	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
++	@%:@include <boost/version.hpp>
++	]], [[
++	#if BOOST_VERSION >= $WANT_BOOST_VERSION
++	// Everything is okay
++	#else
++	#  error Boost version is too old
++	#endif
++	]])],[
++        AC_MSG_RESULT(yes)
++	succeeded=yes
++	found_system=yes
++       	],[
++       	])
++	AC_LANG_POP([C++])
++
++
++
++	dnl if we found no boost with system layout we search for boost libraries
++	dnl built and installed without the --layout=system option or for a staged(not installed) version
++	if test "x$succeeded" != "xyes"; then
++		_version=0
++		if test "$ac_boost_path" != ""; then
++               		BOOST_LDFLAGS="-L$ac_boost_path/lib"
++			if test -d "$ac_boost_path" && test -r "$ac_boost_path"; then
++				for i in `ls -d $ac_boost_path/include/boost-* 2>/dev/null`; do
++					_version_tmp=`echo $i | sed "s#$ac_boost_path##" | sed 's/\/include\/boost-//' | sed 's/_/./'`
++					V_CHECK=`expr $_version_tmp \> $_version`
++					if test "$V_CHECK" = "1" ; then
++						_version=$_version_tmp
++					fi
++					VERSION_UNDERSCORE=`echo $_version | sed 's/\./_/'`
++					BOOST_CPPFLAGS="-I$ac_boost_path/include/boost-$VERSION_UNDERSCORE"
++				done
++			fi
++		else
++			for ac_boost_path in /usr /usr/local /opt ; do
++				if test -d "$ac_boost_path" && test -r "$ac_boost_path"; then
++					for i in `ls -d $ac_boost_path/include/boost-* 2>/dev/null`; do
++						_version_tmp=`echo $i | sed "s#$ac_boost_path##" | sed 's/\/include\/boost-//' | sed 's/_/./'`
++						V_CHECK=`expr $_version_tmp \> $_version`
++						if test "$V_CHECK" = "1" ; then
++							_version=$_version_tmp
++	               					best_path=$ac_boost_path
++						fi
++					done
++				fi
++			done
++
++			VERSION_UNDERSCORE=`echo $_version | sed 's/\./_/'`
++			BOOST_CPPFLAGS="-I$best_path/include/boost-$VERSION_UNDERSCORE"
++			BOOST_LDFLAGS="-L$best_path/lib"
++
++	    		if test "x$BOOST_ROOT" != "x"; then
++				if test -d "$BOOST_ROOT" && test -r "$BOOST_ROOT" && test -d "$BOOST_ROOT/stage/lib" && test -r "$BOOST_ROOT/stage/lib"; then
++					version_dir=`expr //$BOOST_ROOT : '.*/\(.*\)'`
++					stage_version=`echo $version_dir | sed 's/boost_//' | sed 's/_/./g'`
++			        	stage_version_shorten=`expr $stage_version : '\([[0-9]]*\.[[0-9]]*\)'`
++					V_CHECK=`expr $stage_version_shorten \>\= $_version`
++				        if test "$V_CHECK" = "1" ; then
++						AC_MSG_NOTICE(We will use a staged boost library from $BOOST_ROOT)
++						BOOST_CPPFLAGS="-I$BOOST_ROOT"
++						BOOST_LDFLAGS="-L$BOOST_ROOT/stage/lib"
++					fi
++				fi
++	    		fi
++		fi
++
++		CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
++		export CPPFLAGS
++		LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
++		export LDFLAGS
++
++		AC_LANG_PUSH(C++)
++	     	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
++		@%:@include <boost/version.hpp>
++		]], [[
++		#if BOOST_VERSION >= $WANT_BOOST_VERSION
++		// Everything is okay
++		#else
++		#  error Boost version is too old
++		#endif
++		]])],[
++        	AC_MSG_RESULT(yes)
++		succeeded=yes
++		found_system=yes
++       		],[
++	       	])
++		AC_LANG_POP([C++])
++	fi
++
++	if test "$succeeded" != "yes" ; then
++		if test "$_version" = "0" ; then
++			AC_MSG_ERROR([[We could not detect the boost libraries (version $boost_lib_version_req_shorten or higher). If you have a staged boost library (still not installed) please specify \$BOOST_ROOT in your environment and do not give a PATH to --with-boost option.  If you are sure you have boost installed, then check your version number looking in <boost/version.hpp>. See http://randspringer.de/boost for more documentation.]])
++		else
++			AC_MSG_NOTICE([Your boost libraries seems to old (version $_version).])
++		fi
++	else
++		AC_SUBST(BOOST_CPPFLAGS)
++		AC_SUBST(BOOST_LDFLAGS)
++		AC_DEFINE(HAVE_BOOST,,[define if the Boost library is available])
++	fi
++
++        CPPFLAGS="$CPPFLAGS_SAVED"
++       	LDFLAGS="$LDFLAGS_SAVED"
++fi
++
++])
+diff -uNr listtools.orig/ax_boost_regex.m4 listtools/ax_boost_regex.m4
+--- listtools.orig/ax_boost_regex.m4	1970-01-01 01:00:00.000000000 +0100
++++ listtools/ax_boost_regex.m4	2007-03-12 22:19:27.000000000 +0100
+@@ -0,0 +1,98 @@
++##### http://autoconf-archive.cryp.to/ax_boost_regex.html
++#
++# SYNOPSIS
++#
++#   AX_BOOST_REGEX
++#
++# DESCRIPTION
++#
++#   Test for Regex library from the Boost C++ libraries. The macro
++#   requires a preceding call to AX_BOOST_BASE. Further documentation
++#   is available at <http://randspringer.de/boost/index.html>.
++#
++#   This macro calls:
++#
++#     AC_SUBST(BOOST_REGEX_LIB)
++#
++#   And sets:
++#
++#     HAVE_BOOST_REGEX
++#
++# LAST MODIFICATION
++#
++#   2007-03-12
++#
++# COPYLEFT
++#
++#   Copyright (c) 2007 Thomas Porschberg <thomas@randspringer.de>
++#   Copyright (c) 2007 Michael Tindal <mtindal@paradoxpoint.com>
++#
++#   Copying and distribution of this file, with or without
++#   modification, are permitted in any medium without royalty provided
++#   the copyright notice and this notice are preserved.
++
++AC_DEFUN([AX_BOOST_REGEX],
++[
++	AC_ARG_WITH([boost-regex],
++	AS_HELP_STRING([--with-boost-regex@<:@=special-lib@:>@],
++                   [use the Regex library from boost - it is possible to specify a certain library for the linker
++                        e.g. --with-boost-regex=boost_regex-gcc-mt-d-1_33_1 ]),
++        [
++        if test "$withval" = "no"; then
++			want_boost="no"
++        elif test "$withval" = "yes"; then
++            want_boost="yes"
++            ax_boost_user_regex_lib=""
++        else
++		    want_boost="yes"
++        	ax_boost_user_regex_lib="$withval"
++		fi
++        ],
++        [want_boost="yes"]
++	)
++
++	if test "x$want_boost" = "xyes"; then
++        AC_REQUIRE([AC_PROG_CC])
++		CPPFLAGS_SAVED="$CPPFLAGS"
++		CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
++		export CPPFLAGS
++
++		LDFLAGS_SAVED="$LDFLAGS"
++		LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
++		export LDFLAGS
++
++        AC_CACHE_CHECK(whether the Boost::Regex library is available,
++					   ax_cv_boost_regex,
++        [AC_LANG_PUSH([C++])
++			 AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[@%:@include <boost/regex.hpp>
++												]],
++                                   [[boost::regex r(); return 0;]]),
++                   ax_cv_boost_regex=yes, ax_cv_boost_regex=no)
++         AC_LANG_POP([C++])
++		])
++		if test "x$ax_cv_boost_regex" = "xyes"; then
++			AC_DEFINE(HAVE_BOOST_REGEX,,[define if the Boost::Regex library is available])
++			BN=boost_regex
++            if test "x$ax_boost_user_regex_lib" = "x"; then
++				for ax_lib in $BN $BN-$CC $BN-$CC-mt $BN-$CC-mt-s $BN-$CC-s \
++                              lib$BN lib$BN-$CC lib$BN-$CC-mt lib$BN-$CC-mt-s lib$BN-$CC-s \
++                              $BN-mgw $BN-mgw $BN-mgw-mt $BN-mgw-mt-s $BN-mgw-s ; do
++				    AC_CHECK_LIB($ax_lib, main, [BOOST_REGEX_LIB="-l$ax_lib"; AC_SUBST(BOOST_REGEX_LIB) link_regex="yes"; break],
++                                 [link_regex="no"])
++  				done
++            else
++               for ax_lib in $ax_boost_user_regex_lib $BN-$ax_boost_user_regex_lib; do
++				      AC_CHECK_LIB($ax_lib, main,
++                                   [BOOST_REGEX_LIB="-l$ax_lib"; AC_SUBST(BOOST_REGEX_LIB) link_regex="yes"; break],
++                                   [link_regex="no"])
++               done
++            fi
++			if test "x$link_regex" = "xno"; then
++				AC_MSG_ERROR(Could not link against $ax_lib !)
++			fi
++		fi
++
++		CPPFLAGS="$CPPFLAGS_SAVED"
++    	LDFLAGS="$LDFLAGS_SAVED"
++	fi
++])
+diff -uNr listtools.orig/ax_lib_mysql.m4 listtools/ax_lib_mysql.m4
+--- listtools.orig/ax_lib_mysql.m4	1970-01-01 01:00:00.000000000 +0100
++++ listtools/ax_lib_mysql.m4	2007-02-03 20:55:05.000000000 +0100
+@@ -0,0 +1,148 @@
++##### http://autoconf-archive.cryp.to/ax_lib_mysql.html
++#
++# SYNOPSIS
++#
++#   AX_LIB_MYSQL([MINIMUM-VERSION])
++#
++# DESCRIPTION
++#
++#   This macro provides tests of availability of MySQL client library
++#   of particular version or newer.
++#
++#   AX_LIB_MYSQL macro takes only one argument which is optional. If
++#   there is no required version passed, then macro does not run
++#   version test.
++#
++#   The --with-mysql option takes one of three possible values:
++#
++#   no - do not check for MySQL client library
++#
++#   yes - do check for MySQL library in standard locations
++#   (mysql_config should be in the PATH)
++#
++#   path - complete path to mysql_config utility, use this option if
++#   mysql_config can't be found in the PATH
++#
++#   This macro calls:
++#
++#     AC_SUBST(MYSQL_CFLAGS)
++#     AC_SUBST(MYSQL_LDFLAGS)
++#     AC_SUBST(MYSQL_VERSION)
++#
++#   And sets:
++#
++#     HAVE_MYSQL
++#
++# LAST MODIFICATION
++#
++#   2006-07-16
++#
++# COPYLEFT
++#
++#   Copyright (c) 2006 Mateusz Loskot <mateusz@loskot.net>
++#
++#   Copying and distribution of this file, with or without
++#   modification, are permitted in any medium without royalty provided
++#   the copyright notice and this notice are preserved.
++
++AC_DEFUN([AX_LIB_MYSQL],
++[
++    AC_ARG_WITH([mysql],
++        AC_HELP_STRING([--with-mysql=@<:@ARG@:>@],
++            [use MySQL client library @<:@default=yes@:>@, optionally specify path to mysql_config]
++        ),
++        [
++        if test "$withval" = "no"; then
++            want_mysql="no"
++        elif test "$withval" = "yes"; then
++            want_mysql="yes"
++        else
++            want_mysql="yes"
++            MYSQL_CONFIG="$withval"
++        fi
++        ],
++        [want_mysql="yes"]
++    )
++
++    MYSQL_CFLAGS=""
++    MYSQL_LDFLAGS=""
++    MYSQL_VERSION=""
++
++    dnl
++    dnl Check MySQL libraries (libpq)
++    dnl
++
++    if test "$want_mysql" = "yes"; then
++
++        if test -z "$MYSQL_CONFIG" -o test; then
++            AC_PATH_PROG([MYSQL_CONFIG], [mysql_config], [no])
++        fi
++
++        if test "$MYSQL_CONFIG" != "no"; then
++            AC_MSG_CHECKING([for MySQL libraries])
++
++            MYSQL_CFLAGS="`$MYSQL_CONFIG --cflags`"
++            MYSQL_LDFLAGS="`$MYSQL_CONFIG --libs`"
++
++            MYSQL_VERSION=`$MYSQL_CONFIG --version`
++
++            AC_DEFINE([HAVE_MYSQL], [1],
++                [Define to 1 if MySQL libraries are available])
++
++            found_mysql="yes"
++            AC_MSG_RESULT([yes])
++        else
++            found_mysql="no"
++            AC_MSG_RESULT([no])
++        fi
++    fi
++
++    dnl
++    dnl Check if required version of MySQL is available
++    dnl
++
++
++    mysql_version_req=ifelse([$1], [], [], [$1])
++
++    if test "$found_mysql" = "yes" -a -n "$mysql_version_req"; then
++
++        AC_MSG_CHECKING([if MySQL version is >= $mysql_version_req])
++
++        dnl Decompose required version string of MySQL
++        dnl and calculate its number representation
++        mysql_version_req_major=`expr $mysql_version_req : '\([[0-9]]*\)'`
++        mysql_version_req_minor=`expr $mysql_version_req : '[[0-9]]*\.\([[0-9]]*\)'`
++        mysql_version_req_micro=`expr $mysql_version_req : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
++        if test "x$mysql_version_req_micro" = "x"; then
++            mysql_version_req_micro="0"
++        fi
++
++        mysql_version_req_number=`expr $mysql_version_req_major \* 1000000 \
++                                   \+ $mysql_version_req_minor \* 1000 \
++                                   \+ $mysql_version_req_micro`
++
++        dnl Decompose version string of installed MySQL
++        dnl and calculate its number representation
++        mysql_version_major=`expr $MYSQL_VERSION : '\([[0-9]]*\)'`
++        mysql_version_minor=`expr $MYSQL_VERSION : '[[0-9]]*\.\([[0-9]]*\)'`
++        mysql_version_micro=`expr $MYSQL_VERSION : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
++        if test "x$mysql_version_micro" = "x"; then
++            mysql_version_micro="0"
++        fi
++
++        mysql_version_number=`expr $mysql_version_major \* 1000000 \
++                                   \+ $mysql_version_minor \* 1000 \
++                                   \+ $mysql_version_micro`
++
++        mysql_version_check=`expr $mysql_version_number \>\= $mysql_version_req_number`
++        if test "$mysql_version_check" = "1"; then
++            AC_MSG_RESULT([yes])
++        else
++            AC_MSG_RESULT([no])
++        fi
++    fi
++
++    AC_SUBST([MYSQL_VERSION])
++    AC_SUBST([MYSQL_CFLAGS])
++    AC_SUBST([MYSQL_LDFLAGS])
++])
+diff -uNr listtools.orig/configure.ac listtools/configure.ac
+--- listtools.orig/configure.ac	1970-01-01 01:00:00.000000000 +0100
++++ listtools/configure.ac	2007-05-22 06:17:07.000000000 +0200
+@@ -0,0 +1,54 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ(2.61)
++AC_INIT(listtools, 1.0, qa@mandriva.com)
++AM_INIT_AUTOMAKE
++AC_CONFIG_SRCDIR([libp2p/src/list.cpp])
++AC_CONFIG_HEADER([config.h])
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_CC
++AC_PROG_LIBTOOL
++
++DX_INIT_DOXYGEN([listtools], [Doxyfile], [Docs])
++DX_DOXYGEN_FEATURE(ON)
++DX_HTML_FEATURE(ON)
++DX_CHM_FEATURE(OFF)
++DX_CHI_FEATURE(OFF)
++DX_MAN_FEATURE(OFF)
++DX_RTF_FEATURE(OFF)
++DX_XML_FEATURE(OFF)
++DX_PDF_FEATURE(OFF)
++DX_PS_FEATURE(OFF) 
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_CHECK_HEADERS([netinet/in.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_HEADER_STDBOOL
++AC_C_CONST
++AC_C_INLINE
++AC_TYPE_SIZE_T
++AX_CFLAGS_WARN_ALL(CXXFLAGS)
++
++# Checks for library functions.
++AC_FUNC_MEMCMP
++
++AX_LIB_MYSQL([5.0.41])
++AX_BOOST_BASE([1.33.1])
++AX_BOOST_REGEX
++
++AC_CONFIG_FILES([Makefile
++                 listtools.spec
++                 dumpp2p/Makefile
++                 filterp2p/Makefile
++                 genallow/Makefile
++                 libp2p/Makefile
++                 libp2p/libp2p.pc
++                 libp2p/src/Makefile
++                 mergep2p/Makefile])
++AC_OUTPUT
+diff -uNr listtools.orig/dumpp2p/Makefile.am listtools/dumpp2p/Makefile.am
+--- listtools.orig/dumpp2p/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/dumpp2p/Makefile.am	2007-05-22 04:04:14.000000000 +0200
+@@ -0,0 +1,7 @@
++EXTRA_DIST = dumpp2p.vcproj
++INCLUDES = -I$(top_srcdir)/libp2p/include
++LDADD = ../libp2p/src/libp2p.la
++bin_PROGRAMS = dumpp2p
++dumpp2p_SOURCES = dumpp2p.cpp
++AM_CPPFLAGS = $(MYSQL_CFLAGS)
++AM_LDFLAGS = $(MYSQL_LDFLAGS)
+diff -uNr listtools.orig/filterp2p/Makefile.am listtools/filterp2p/Makefile.am
+--- listtools.orig/filterp2p/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/filterp2p/Makefile.am	2007-05-22 03:23:17.000000000 +0200
+@@ -0,0 +1,8 @@
++EXTRA_DIST = filterp2p.vcproj
++INCLUDES = -I$(top_srcdir)/libp2p/include
++LDADD = ../libp2p/src/libp2p.la
++bin_PROGRAMS = filterp2p
++filterp2p_SOURCES = filterp2p.cpp
++AM_CPPFLAGS = $(BOOST_CPPFLAGS)
++AM_LDFLAGS = $(BOOST_LDFLAGS)
++LIBS = @LIBS@ $(BOOST_REGEX_LIB)
+diff -uNr listtools.orig/genallow/Makefile.am listtools/genallow/Makefile.am
+--- listtools.orig/genallow/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/genallow/Makefile.am	2007-05-22 03:23:42.000000000 +0200
+@@ -0,0 +1,5 @@
++EXTRA_DIST = genallow.vcproj
++INCLUDES = -I$(top_srcdir)/libp2p/include
++LDADD = ../libp2p/src/libp2p.la
++bin_PROGRAMS = genallow
++genallow_SOURCES = genallow.cpp
+diff -uNr listtools.orig/genallow/genallow.cpp listtools/genallow/genallow.cpp
+--- listtools.orig/genallow/genallow.cpp	2005-04-30 09:42:31.000000000 +0200
++++ listtools/genallow/genallow.cpp	2007-05-22 03:09:52.000000000 +0200
+@@ -1,4 +1,6 @@
++#ifdef _WIN32
+ #define WIN32_LEAN_AND_MEAN
++#endif
+ 
+ #include <set>
+ #include <queue>
+@@ -7,8 +9,13 @@
+ #include <fstream>
+ #include <iostream>
+ #include <p2p/list.hpp>
++#ifdef _WIN32
+ #include <winsock2.h>
+ #include <ws2tcpip.h>
++#else
++#include <sys/socket.h>
++#include <netdb.h>
++#endif
+ 
+ using namespace std;
+ 
+@@ -51,10 +58,12 @@
+ 
+ 	p2p::list l;
+ 
++#ifdef _WIN32
+ 	{
+ 		WSADATA data;
+ 		WSAStartup(WINSOCK_VERSION, &data);
+ 	}
++#endif
+ 
+ 	set<string>::size_type pos=0;
+ 	unsigned int queries=0, errors=0;
+@@ -124,8 +133,10 @@
+ 	}
+ 	cerr << endl;
+ 
++#ifdef _WIN32
+ 	WSACleanup();
+-	
++#endif
++
+ 	l.optimize(true);
+ 	l.save(cout, p2p::list::file_p2p);
+ 
+diff -uNr listtools.orig/libp2p/Makefile.am listtools/libp2p/Makefile.am
+--- listtools.orig/libp2p/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/libp2p/Makefile.am	2007-05-22 06:29:38.000000000 +0200
+@@ -0,0 +1,4 @@
++EXTRA_DIST = libp2p.vcproj
++SUBDIRS = src
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libp2p.pc
+diff -uNr listtools.orig/libp2p/libp2p.pc.in listtools/libp2p/libp2p.pc.in
+--- listtools.orig/libp2p/libp2p.pc.in	1970-01-01 01:00:00.000000000 +0100
++++ listtools/libp2p/libp2p.pc.in	2007-05-22 06:22:10.000000000 +0200
+@@ -0,0 +1,12 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libp2p
++Description: libp2p @PACKAGE_VERSION@
++Version: @PACKAGE_VERSION@
++Requires:
++Conflicts:
++Libs: -L${libdir} -lp2p
++Cflags: -I${includedir}/p2p
+diff -uNr listtools.orig/libp2p/src/Makefile.am listtools/libp2p/src/Makefile.am
+--- listtools.orig/libp2p/src/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/libp2p/src/Makefile.am	2007-05-22 06:23:48.000000000 +0200
+@@ -0,0 +1,10 @@
++INCLUDES = -I$(top_srcdir)/libp2p/include
++lib_LTLIBRARIES = libp2p.la
++libp2p_la_SOURCES = compact_list.cpp list.cpp list_p2b.cpp list_p2p.cpp stdafx.cpp
++pkginclude_HEADERS = ../include/p2p/compact_list.hpp \
++                     ../include/p2p/exception.hpp \
++                     ../include/p2p/ip.hpp \
++                     ../include/p2p/list.hpp \
++                     ../include/p2p/range.hpp
++noinst_HEADERS = stdafx.h utf8.h
++pkgincludedir = $(includedir)/p2p
+diff -uNr listtools.orig/listtools.spec.in listtools/listtools.spec.in
+--- listtools.orig/listtools.spec.in	1970-01-01 01:00:00.000000000 +0100
++++ listtools/listtools.spec.in	2007-05-22 07:30:31.000000000 +0200
+@@ -0,0 +1,110 @@
++%define lib_major                       0
++%define lib_name_orig                   %mklibname p2p
++%define lib_name_orig_devel             %mklibname p2p -d
++%define lib_name_orig_static_devel      %mklibname p2p -d -s
++%define lib_name                        %mklibname p2p %{lib_major}
++%define lib_name_devel                  %mklibname p2p %{lib_major} -d
++%define lib_name_static_devel           %mklibname p2p %{lib_major} -d -s
++
++Name:           listtools
++Version:        @PACKAGE_VERSION@
++Release:        %mkrel 1
++Epoch:          0
++Summary:        C P2P List Library
++URL:            http://sourceforge.net/projects/peerguardian
++# cvs -d:pserver:anonymous@peerguardian.cvs.sourceforge.net:/cvsroot/peerguardian login
++# cvs -z3 -d:pserver:anonymous@peerguardian.cvs.sourceforge.net:/cvsroot/peerguardian co -P listtools
++Source0:        %{name}-%{version}.tar.bz2
++Patch0:         %{name}-unix.patch
++License:        BSD-style
++Group:          System/Libraries
++BuildRequires:  doxygen
++BuildRequires:  libboost-devel
++BuildRequires:  libmysql-devel
++BuildRequires:  tetex
++BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
++
++%description
++C P2P List Library.
++
++%package -n %{lib_name}
++Summary:        Main library for the libp2p library
++Group:          System/Libraries
++
++%description -n %{lib_name}
++This package contains the libraries needed to run programs dynamically
++linked with the libp2p library.
++
++%package -n %{lib_name_devel}
++Group:          Development/C++
++Summary:        Shared libraries and header files for the libp2p library
++Provides:       %{name}-devel = %{epoch}:%{version}-%{release}
++Provides:       %{lib_name_orig_devel} = %{epoch}:%{version}-%{release}
++Requires:       %{lib_name} = %{epoch}:%{version}-%{release}
++
++%description -n %{lib_name_devel}
++The %{name} package contains the shared libraries and header files
++needed for developing libp2p applications.
++
++%package -n %{lib_name_static_devel}
++Group:          Development/C++
++Summary:        Static libraries for the libp2p library
++Provides:       %{lib_name_orig_static_devel} = %{epoch}:%{version}-%{release}
++Requires:       %{lib_name_devel} = %{epoch}:%{version}-%{release}
++
++%description -n %{lib_name_static_devel}
++The %{name} package contains the static libraries needed for developing
++libp2p applications.
++
++%prep
++%setup -q -n %{name}
++%patch0 -p1
++%{_bindir}/autoreconf -f --verbose -i
++
++%build
++%{configure2_5x}
++%{make}
++%{make} doxygen-doc
++
++%install
++%{__rm} -rf %{buildroot}
++%{makeinstall}
++
++%check
++%{make} check
++
++%clean
++%{__rm} -rf %{buildroot}
++
++%post -n %{lib_name} -p /sbin/ldconfig
++
++%postun -n %{lib_name} -p /sbin/ldconfig
++
++%files
++%defattr(0644,root,root,0755)
++%attr(0755,root,root) %{_bindir}/dumpp2p
++%attr(0755,root,root) %{_bindir}/filterp2p
++%attr(0755,root,root) %{_bindir}/genallow
++%attr(0755,root,root) %{_bindir}/mergep2p
++
++%files -n %{lib_name}
++%defattr(0644,root,root,0755)
++%doc p2b.txt
++%attr(0755,root,root) %{_libdir}/libp2p.so.*
++
++%files -n %{lib_name_devel}
++%defattr(0644,root,root,0755)
++%doc Docs/html
++%dir %{_includedir}/p2p
++%{_includedir}/p2p/*.hpp
++%attr(0755,root,root) %{_libdir}/libp2p.so
++%attr(0755,root,root) %{_libdir}/libp2p.la
++%{_libdir}/pkgconfig/libp2p.pc
++
++%files -n %{lib_name_static_devel}
++%defattr(0644,root,root,0755)
++%{_libdir}/libp2p.a
++
++%changelog
++* Mon May 21 2007 David Walluck <walluck@mandriva.org> 0:@PACKAGE_VERSION@-1mdv2008.0
++- release
+diff -uNr listtools.orig/mergep2p/Makefile.am listtools/mergep2p/Makefile.am
+--- listtools.orig/mergep2p/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ listtools/mergep2p/Makefile.am	2007-05-22 03:24:12.000000000 +0200
+@@ -0,0 +1,5 @@
++EXTRA_DIST = mergep2p.vcproj
++INCLUDES = -I$(top_srcdir)/libp2p/include
++LDADD = ../libp2p/src/libp2p.la
++bin_PROGRAMS = mergep2p
++mergep2p_SOURCES = mergep2p.cpp
+diff -uNr listtools.orig/mergep2p/mergep2p.cpp listtools/mergep2p/mergep2p.cpp
+--- listtools.orig/mergep2p/mergep2p.cpp	2005-07-13 08:46:21.000000000 +0200
++++ listtools/mergep2p/mergep2p.cpp	2007-05-22 03:03:58.000000000 +0200
+@@ -42,7 +42,7 @@
+ 			}
+ 			else l.load(argv[i]);
+ 		}
+-		catch(exception &ex) {
++		catch(std::exception &ex) {
+ 			std::cerr << ex.what() << std::endl;
+ 		}
+ 	}
+--- /dev/null	2006-06-20 19:45:38.000000000 +0200
++++ listtools/ax_cflags_warn_all.m4	2007-02-03 21:02:04.000000000 +0100
+@@ -0,0 +1,158 @@
++##### http://autoconf-archive.cryp.to/ax_cflags_warn_all.html
++#
++# SYNOPSIS
++#
++#   AX_CFLAGS_WARN_ALL [(shellvar [,default, [A/NA]])]
++#
++# DESCRIPTION
++#
++#   Try to find a compiler option that enables most reasonable
++#   warnings. This macro is directly derived from VL_PROG_CC_WARNINGS
++#   which is split up into two AX_CFLAGS_WARN_ALL and
++#   AX_CFLAGS_WARN_ALL_ANSI
++#
++#   For the GNU CC compiler it will be -Wall (and -ansi -pedantic) The
++#   result is added to the shellvar being CFLAGS by default.
++#
++#   Currently this macro knows about GCC, Solaris C compiler, Digital
++#   Unix C compiler, C for AIX Compiler, HP-UX C compiler, IRIX C
++#   compiler, NEC SX-5 (Super-UX 10) C compiler, and Cray J90 (Unicos
++#   10.0.0.8) C compiler.
++#
++#    - $1 shell-variable-to-add-to : CFLAGS
++#    - $2 add-value-if-not-found : nothing
++#    - $3 action-if-found : add value to shellvariable
++#    - $4 action-if-not-found : nothing
++#
++# LAST MODIFICATION
++#
++#   2006-12-12
++#
++# COPYLEFT
++#
++#   Copyright (c) 2006 Guido U. Draheim <guidod@gmx.de>
++#
++#   This program is free software; you can redistribute it and/or
++#   modify it under the terms of the GNU General Public License as
++#   published by the Free Software Foundation; either version 2 of the
++#   License, or (at your option) any later version.
++#
++#   This program is distributed in the hope that it will be useful, but
++#   WITHOUT ANY WARRANTY; without even the implied warranty of
++#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++#   General Public License for more details.
++#
++#   You should have received a copy of the GNU General Public License
++#   along with this program; if not, write to the Free Software
++#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
++#   02111-1307, USA.
++#
++#   As a special exception, the respective Autoconf Macro's copyright
++#   owner gives unlimited permission to copy, distribute and modify the
++#   configure scripts that are the output of Autoconf when processing
++#   the Macro. You need not follow the terms of the GNU General Public
++#   License when using or distributing such scripts, even though
++#   portions of the text of the Macro appear in them. The GNU General
++#   Public License (GPL) does govern all other use of the material that
++#   constitutes the Autoconf Macro.
++#
++#   This special exception to the GPL applies to versions of the
++#   Autoconf Macro released by the Autoconf Macro Archive. When you
++#   make and distribute a modified version of the Autoconf Macro, you
++#   may extend this special exception to the GPL to apply to your
++#   modified version as well.
++
++AC_DEFUN([AX_CFLAGS_WARN_ALL],[dnl
++AS_VAR_PUSHDEF([FLAGS],[CFLAGS])dnl
++AS_VAR_PUSHDEF([VAR],[ac_cv_cflags_warn_all])dnl
++AC_CACHE_CHECK([m4_ifval($1,$1,FLAGS) for maximum warnings],
++VAR,[VAR="no, unknown"
++ AC_LANG_SAVE
++ AC_LANG_C
++ ac_save_[]FLAGS="$[]FLAGS"
++for ac_arg dnl
++in "-pedantic  % -Wall"       dnl   GCC
++   "-xstrconst % -v"          dnl Solaris C
++   "-std1      % -verbose -w0 -warnprotos" dnl Digital Unix
++   "-qlanglvl=ansi % -qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd" dnl AIX
++   "-ansi -ansiE % -fullwarn" dnl IRIX
++   "+ESlit     % +w1"         dnl HP-UX C
++   "-Xc        % -pvctl[,]fullmsg" dnl NEC SX-5 (Super-UX 10)
++   "-h conform % -h msglevel 2" dnl Cray C (Unicos)
++   #
++do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
++   AC_TRY_COMPILE([],[return 0;],
++   [VAR=`echo $ac_arg | sed -e 's,.*% *,,'` ; break])
++done
++ FLAGS="$ac_save_[]FLAGS"
++ AC_LANG_RESTORE
++])
++case ".$VAR" in
++     .ok|.ok,*) m4_ifvaln($3,$3) ;;
++   .|.no|.no,*) m4_ifvaln($4,$4,[m4_ifval($2,[
++        AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])
++                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])]) ;;
++   *) m4_ifvaln($3,$3,[
++   if echo " $[]m4_ifval($1,$1,FLAGS) " | grep " $VAR " 2>&1 >/dev/null
++   then AC_RUN_LOG([: m4_ifval($1,$1,FLAGS) does contain $VAR])
++   else AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"])
++                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"
++   fi ]) ;;
++esac
++AS_VAR_POPDEF([VAR])dnl
++AS_VAR_POPDEF([FLAGS])dnl
++])
++
++dnl the only difference - the LANG selection... and the default FLAGS
++
++AC_DEFUN([AX_CXXFLAGS_WARN_ALL],[dnl
++AS_VAR_PUSHDEF([FLAGS],[CXXFLAGS])dnl
++AS_VAR_PUSHDEF([VAR],[ac_cv_cxxflags_warn_all])dnl
++AC_CACHE_CHECK([m4_ifval($1,$1,FLAGS) for maximum warnings],
++VAR,[VAR="no, unknown"
++ AC_LANG_SAVE
++ AC_LANG_CPLUSPLUS
++ ac_save_[]FLAGS="$[]FLAGS"
++for ac_arg dnl
++in "-pedantic  % -Wall"       dnl   GCC
++   "-xstrconst % -v"          dnl Solaris C
++   "-std1      % -verbose -w0 -warnprotos" dnl Digital Unix
++   "-qlanglvl=ansi % -qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd" dnl AIX
++   "-ansi -ansiE % -fullwarn" dnl IRIX
++   "+ESlit     % +w1"         dnl HP-UX C
++   "-Xc        % -pvctl[,]fullmsg" dnl NEC SX-5 (Super-UX 10)
++   "-h conform % -h msglevel 2" dnl Cray C (Unicos)
++   #
++do FLAGS="$ac_save_[]FLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
++   AC_TRY_COMPILE([],[return 0;],
++   [VAR=`echo $ac_arg | sed -e 's,.*% *,,'` ; break])
++done
++ FLAGS="$ac_save_[]FLAGS"
++ AC_LANG_RESTORE
++])
++case ".$VAR" in
++     .ok|.ok,*) m4_ifvaln($3,$3) ;;
++   .|.no|.no,*) m4_ifvaln($4,$4,[m4_ifval($2,[
++        AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])
++                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $2"])]) ;;
++   *) m4_ifvaln($3,$3,[
++   if echo " $[]m4_ifval($1,$1,FLAGS) " | grep " $VAR " 2>&1 >/dev/null
++   then AC_RUN_LOG([: m4_ifval($1,$1,FLAGS) does contain $VAR])
++   else AC_RUN_LOG([: m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"])
++                      m4_ifval($1,$1,FLAGS)="$m4_ifval($1,$1,FLAGS) $VAR"
++   fi ]) ;;
++esac
++AS_VAR_POPDEF([VAR])dnl
++AS_VAR_POPDEF([FLAGS])dnl
++])
++
++dnl  implementation tactics:
++dnl   the for-argument contains a list of options. The first part of
++dnl   these does only exist to detect the compiler - usually it is
++dnl   a global option to enable -ansi or -extrawarnings. All other
++dnl   compilers will fail about it. That was needed since a lot of
++dnl   compilers will give false positives for some option-syntax
++dnl   like -Woption or -Xoption as they think of it is a pass-through
++dnl   to later compile stages or something. The "%" is used as a
++dnl   delimimiter. A non-option comment can be given after "%%" marks
++dnl   which will be shown but not added to the respective C/CXXFLAGS.
+--- listtools/dumpp2p/dumpp2p.cpp.orig	2007-05-23 01:39:17.000000000 +0200
++++ listtools/dumpp2p/dumpp2p.cpp	2007-05-23 01:42:58.000000000 +0200
+@@ -36,9 +36,9 @@
+ using namespace std;
+ 
+ int main(int argc, char *argv[]) {
+-	if(argc<3) {
++	if(argc<7) {
+ 		cerr
+-			<< "usage: " << argv[0] << " [category] [p2p|p2b|p2b1|p2b2|p2b3] [outfile]" << endl
++			<< "usage: " << argv[0] << " [category] [p2p|p2b|p2b1|p2b2|p2b3] [IPDB_SERVER] [IPDB_DATABASE] [IPDB_USERNAME] [IPDB_PASSWORD] [outfile]" << endl
+ 			<< "if outfile is not specified, writes to stdout" << endl;
+ 
+ 		return -1;
+@@ -55,6 +55,11 @@
+ 		return -1;
+ 	}
+ 
++        char *IPDB_SERVER=argv[3];
++        char *IPDB_DATABASE=argv[4];
++        char *IPDB_USERNAME=argv[5];
++        char *IPDB_PASSWORD=argv[6];
++
+ 	p2p::list l;
+ 
+ 	MYSQL *con=mysql_init(NULL);
+@@ -164,7 +169,7 @@
+ 	l.optimize();
+ 
+ 	try {
+-		if(argc==4) l.save(argv[3], type);
++		if(argc==8) l.save(argv[7], type);
+ 		else l.save(cout, type);
+ 	}
+ 	catch(const exception &ex) {
+--- listtools/Doxyfile.orig	2007-05-23 21:59:27.000000000 +0200
++++ listtools/Doxyfile	2007-05-23 22:00:32.000000000 +0200
+@@ -417,7 +417,7 @@
+ # directories like "/usr/src/myproject". Separate the files or directories 
+ # with spaces.
+ 
+-INPUT                  = libcp2p
++INPUT                  = libp2p
+ 
+ # If the value of the INPUT tag contains directories, you can use the 
+ # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
+@@ -426,13 +426,13 @@
+ # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp 
+ # *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm
+ 
+-FILE_PATTERNS          = p2p.h
++FILE_PATTERNS          = *.cpp *.hpp
+ 
+ # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
+ # should be searched for input files as well. Possible values are YES and NO. 
+ # If left blank NO is used.
+ 
+-RECURSIVE              = NO
++RECURSIVE              = YES
+ 
+ # The EXCLUDE tag can be used to specify files and/or directories that should 
+ # excluded from the INPUT source files. This way you can easily exclude a 
+@@ -684,7 +684,7 @@
+ # If the GENERATE_LATEX tag is set to YES (the default) Doxygen will 
+ # generate Latex output.
+ 
+-GENERATE_LATEX         = NO
++GENERATE_LATEX         = YES
+ 
+ # The LATEX_OUTPUT tag is used to specify where the LaTeX docs will be put. 
+ # If a relative path is entered the value of OUTPUT_DIRECTORY will be 
+--- listtools.orig/ax_prog_doxygen.m4	1969-12-31 16:00:00.000000000 -0800
++++ listtools/ax_prog_doxygen.m4	2008-04-12 10:47:54.000000000 -0700
+@@ -0,0 +1,534 @@
++# ===========================================================================
++#            http://autoconf-archive.cryp.to/ax_prog_doxygen.html
++# ===========================================================================
++#
++# SYNOPSIS
++#
++#   DX_INIT_DOXYGEN(PROJECT-NAME, DOXYFILE-PATH, [OUTPUT-DIR])
++#   DX_DOXYGEN_FEATURE(ON|OFF)
++#   DX_DOT_FEATURE(ON|OFF)
++#   DX_HTML_FEATURE(ON|OFF)
++#   DX_CHM_FEATURE(ON|OFF)
++#   DX_CHI_FEATURE(ON|OFF)
++#   DX_MAN_FEATURE(ON|OFF)
++#   DX_RTF_FEATURE(ON|OFF)
++#   DX_XML_FEATURE(ON|OFF)
++#   DX_PDF_FEATURE(ON|OFF)
++#   DX_PS_FEATURE(ON|OFF)
++#
++# DESCRIPTION
++#
++#   The DX_*_FEATURE macros control the default setting for the given
++#   Doxygen feature. Supported features are 'DOXYGEN' itself, 'DOT' for
++#   generating graphics, 'HTML' for plain HTML, 'CHM' for compressed HTML
++#   help (for MS users), 'CHI' for generating a seperate .chi file by the
++#   .chm file, and 'MAN', 'RTF', 'XML', 'PDF' and 'PS' for the appropriate
++#   output formats. The environment variable DOXYGEN_PAPER_SIZE may be
++#   specified to override the default 'a4wide' paper size.
++#
++#   By default, HTML, PDF and PS documentation is generated as this seems to
++#   be the most popular and portable combination. MAN pages created by
++#   Doxygen are usually problematic, though by picking an appropriate subset
++#   and doing some massaging they might be better than nothing. CHM and RTF
++#   are specific for MS (note that you can't generate both HTML and CHM at
++#   the same time). The XML is rather useless unless you apply specialized
++#   post-processing to it.
++#
++#   The macros mainly control the default state of the feature. The use can
++#   override the default by specifying --enable or --disable. The macros
++#   ensure that contradictory flags are not given (e.g.,
++#   --enable-doxygen-html and --enable-doxygen-chm,
++#   --enable-doxygen-anything with --disable-doxygen, etc.) Finally, each
++#   feature will be automatically disabled (with a warning) if the required
++#   programs are missing.
++#
++#   Once all the feature defaults have been specified, call DX_INIT_DOXYGEN
++#   with the following parameters: a one-word name for the project for use
++#   as a filename base etc., an optional configuration file name (the
++#   default is 'Doxyfile', the same as Doxygen's default), and an optional
++#   output directory name (the default is 'doxygen-doc').
++#
++#   Automake Support
++#
++#   The following is a template aminclude.am file for use with Automake.
++#   Make targets and variables values are controlled by the various
++#   DX_COND_* conditionals set by autoconf.
++#
++#   The provided targets are:
++#
++#     doxygen-doc: Generate all doxygen documentation.
++#
++#     doxygen-run: Run doxygen, which will generate some of the
++#                  documentation (HTML, CHM, CHI, MAN, RTF, XML)
++#                  but will not do the post processing required
++#                  for the rest of it (PS, PDF, and some MAN).
++#
++#     doxygen-man: Rename some doxygen generated man pages.
++#
++#     doxygen-ps:  Generate doxygen PostScript documentation.
++#
++#     doxygen-pdf: Generate doxygen PDF documentation.
++#
++#   Note that by default these are not integrated into the automake targets.
++#   If doxygen is used to generate man pages, you can achieve this
++#   integration by setting man3_MANS to the list of man pages generated and
++#   then adding the dependency:
++#
++#     $(man3_MANS): doxygen-doc
++#
++#   This will cause make to run doxygen and generate all the documentation.
++#
++#   The following variable is intended for use in Makefile.am:
++#
++#     DX_CLEANFILES = everything to clean.
++#
++#   Then add this variable to MOSTLYCLEANFILES.
++#
++#     ----- begin aminclude.am -------------------------------------
++#
++#     ## --------------------------------- ##
++#     ## Format-independent Doxygen rules. ##
++#     ## --------------------------------- ##
++#
++#     if DX_COND_doc
++#
++#     ## ------------------------------- ##
++#     ## Rules specific for HTML output. ##
++#     ## ------------------------------- ##
++#
++#     if DX_COND_html
++#
++#     DX_CLEAN_HTML = @DX_DOCDIR@/html
++#
++#     endif DX_COND_html
++#
++#     ## ------------------------------ ##
++#     ## Rules specific for CHM output. ##
++#     ## ------------------------------ ##
++#
++#     if DX_COND_chm
++#
++#     DX_CLEAN_CHM = @DX_DOCDIR@/chm
++#
++#     if DX_COND_chi
++#
++#     DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
++#
++#     endif DX_COND_chi
++#
++#     endif DX_COND_chm
++#
++#     ## ------------------------------ ##
++#     ## Rules specific for MAN output. ##
++#     ## ------------------------------ ##
++#
++#     if DX_COND_man
++#
++#     DX_CLEAN_MAN = @DX_DOCDIR@/man
++#
++#     endif DX_COND_man
++#
++#     ## ------------------------------ ##
++#     ## Rules specific for RTF output. ##
++#     ## ------------------------------ ##
++#
++#     if DX_COND_rtf
++#
++#     DX_CLEAN_RTF = @DX_DOCDIR@/rtf
++#
++#     endif DX_COND_rtf
++#
++#     ## ------------------------------ ##
++#     ## Rules specific for XML output. ##
++#     ## ------------------------------ ##
++#
++#     if DX_COND_xml
++#
++#     DX_CLEAN_XML = @DX_DOCDIR@/xml
++#
++#     endif DX_COND_xml
++#
++#     ## ----------------------------- ##
++#     ## Rules specific for PS output. ##
++#     ## ----------------------------- ##
++#
++#     if DX_COND_ps
++#
++#     DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE@.ps
++#
++#     DX_PS_GOAL = doxygen-ps
++#
++#     doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
++#
++#     @DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
++#   	  cd @DX_DOCDIR@/latex; \
++#   	  rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
++#   	  $(DX_LATEX) refman.tex; \
++#   	  $(MAKEINDEX_PATH) refman.idx; \
++#   	  $(DX_LATEX) refman.tex; \
++#   	  countdown=5; \
++#   	  while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
++#   			    refman.log > /dev/null 2>&1 \
++#   	     && test $$countdown -gt 0; do \
++#   	      $(DX_LATEX) refman.tex; \
++#   	      countdown=`expr $$countdown - 1`; \
++#   	  done; \
++#   	  $(DX_DVIPS) -o ../@PACKAGE@.ps refman.dvi
++#
++#     endif DX_COND_ps
++#
++#     ## ------------------------------ ##
++#     ## Rules specific for PDF output. ##
++#     ## ------------------------------ ##
++#
++#     if DX_COND_pdf
++#
++#     DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
++#
++#     DX_PDF_GOAL = doxygen-pdf
++#
++#     doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
++#
++#     @DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
++#   	  cd @DX_DOCDIR@/latex; \
++#   	  rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
++#   	  $(DX_PDFLATEX) refman.tex; \
++#   	  $(DX_MAKEINDEX) refman.idx; \
++#   	  $(DX_PDFLATEX) refman.tex; \
++#   	  countdown=5; \
++#   	  while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
++#   			    refman.log > /dev/null 2>&1 \
++#   	     && test $$countdown -gt 0; do \
++#   	      $(DX_PDFLATEX) refman.tex; \
++#   	      countdown=`expr $$countdown - 1`; \
++#   	  done; \
++#   	  mv refman.pdf ../@PACKAGE@.pdf
++#
++#     endif DX_COND_pdf
++#
++#     ## ------------------------------------------------- ##
++#     ## Rules specific for LaTeX (shared for PS and PDF). ##
++#     ## ------------------------------------------------- ##
++#
++#     if DX_COND_latex
++#
++#     DX_CLEAN_LATEX = @DX_DOCDIR@/latex
++#
++#     endif DX_COND_latex
++#
++#     .PHONY: doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
++#
++#     .INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
++#
++#     doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
++#
++#     doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
++#
++#     @DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
++#   	  rm -rf @DX_DOCDIR@
++#   	  $(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
++#
++#     DX_CLEANFILES = \
++#         @DX_DOCDIR@/@PACKAGE@.tag \
++#         -r \
++#         $(DX_CLEAN_HTML) \
++#         $(DX_CLEAN_CHM) \
++#         $(DX_CLEAN_CHI) \
++#         $(DX_CLEAN_MAN) \
++#         $(DX_CLEAN_RTF) \
++#         $(DX_CLEAN_XML) \
++#         $(DX_CLEAN_PS) \
++#         $(DX_CLEAN_PDF) \
++#         $(DX_CLEAN_LATEX)
++#
++#     endif DX_COND_doc
++#
++#     ----- end aminclude.am ---------------------------------------
++#
++# LAST MODIFICATION
++#
++#   2008-04-12
++#
++# COPYLEFT
++#
++#   Copyright (c) 2008 Oren Ben-Kiki <oren@ben-kiki.org>
++#
++#   Copying and distribution of this file, with or without modification, are
++#   permitted in any medium without royalty provided the copyright notice
++#   and this notice are preserved.
++
++## ----------##
++## Defaults. ##
++## ----------##
++
++DX_ENV=""
++AC_DEFUN([DX_FEATURE_doc],  ON)
++AC_DEFUN([DX_FEATURE_dot],  ON)
++AC_DEFUN([DX_FEATURE_man],  OFF)
++AC_DEFUN([DX_FEATURE_html], ON)
++AC_DEFUN([DX_FEATURE_chm],  OFF)
++AC_DEFUN([DX_FEATURE_chi],  OFF)
++AC_DEFUN([DX_FEATURE_rtf],  OFF)
++AC_DEFUN([DX_FEATURE_xml],  OFF)
++AC_DEFUN([DX_FEATURE_pdf],  ON)
++AC_DEFUN([DX_FEATURE_ps],   ON)
++
++## --------------- ##
++## Private macros. ##
++## --------------- ##
++
++# DX_ENV_APPEND(VARIABLE, VALUE)
++# ------------------------------
++# Append VARIABLE="VALUE" to DX_ENV for invoking doxygen.
++AC_DEFUN([DX_ENV_APPEND], [AC_SUBST([DX_ENV], ["$DX_ENV $1='$2'"])])
++
++# DX_DIRNAME_EXPR
++# ---------------
++# Expand into a shell expression prints the directory part of a path.
++AC_DEFUN([DX_DIRNAME_EXPR],
++         [[expr ".$1" : '\(\.\)[^/]*$' \| "x$1" : 'x\(.*\)/[^/]*$']])
++
++# DX_IF_FEATURE(FEATURE, IF-ON, IF-OFF)
++# -------------------------------------
++# Expands according to the M4 (static) status of the feature.
++AC_DEFUN([DX_IF_FEATURE], [ifelse(DX_FEATURE_$1, ON, [$2], [$3])])
++
++# DX_REQUIRE_PROG(VARIABLE, PROGRAM)
++# ----------------------------------
++# Require the specified program to be found for the DX_CURRENT_FEATURE to work.
++AC_DEFUN([DX_REQUIRE_PROG], [
++AC_PATH_TOOL([$1], [$2])
++if test "$DX_FLAG_[]DX_CURRENT_FEATURE$$1" = 1; then
++    AC_MSG_WARN([$2 not found - will not DX_CURRENT_DESCRIPTION])
++    AC_SUBST([DX_FLAG_]DX_CURRENT_FEATURE, 0)
++fi
++])
++
++# DX_TEST_FEATURE(FEATURE)
++# ------------------------
++# Expand to a shell expression testing whether the feature is active.
++AC_DEFUN([DX_TEST_FEATURE], [test "$DX_FLAG_$1" = 1])
++
++# DX_CHECK_DEPEND(REQUIRED_FEATURE, REQUIRED_STATE)
++# -------------------------------------------------
++# Verify that a required features has the right state before trying to turn on
++# the DX_CURRENT_FEATURE.
++AC_DEFUN([DX_CHECK_DEPEND], [
++test "$DX_FLAG_$1" = "$2" \
++|| AC_MSG_ERROR([doxygen-DX_CURRENT_FEATURE ifelse([$2], 1,
++                            requires, contradicts) doxygen-DX_CURRENT_FEATURE])
++])
++
++# DX_CLEAR_DEPEND(FEATURE, REQUIRED_FEATURE, REQUIRED_STATE)
++# ----------------------------------------------------------
++# Turn off the DX_CURRENT_FEATURE if the required feature is off.
++AC_DEFUN([DX_CLEAR_DEPEND], [
++test "$DX_FLAG_$1" = "$2" || AC_SUBST([DX_FLAG_]DX_CURRENT_FEATURE, 0)
++])
++
++# DX_FEATURE_ARG(FEATURE, DESCRIPTION,
++#                CHECK_DEPEND, CLEAR_DEPEND,
++#                REQUIRE, DO-IF-ON, DO-IF-OFF)
++# --------------------------------------------
++# Parse the command-line option controlling a feature. CHECK_DEPEND is called
++# if the user explicitly turns the feature on (and invokes DX_CHECK_DEPEND),
++# otherwise CLEAR_DEPEND is called to turn off the default state if a required
++# feature is disabled (using DX_CLEAR_DEPEND). REQUIRE performs additional
++# requirement tests (DX_REQUIRE_PROG). Finally, an automake flag is set and
++# DO-IF-ON or DO-IF-OFF are called according to the final state of the feature.
++AC_DEFUN([DX_ARG_ABLE], [
++    AC_DEFUN([DX_CURRENT_FEATURE], [$1])
++    AC_DEFUN([DX_CURRENT_DESCRIPTION], [$2])
++    AC_ARG_ENABLE(doxygen-$1,
++                  [AS_HELP_STRING(DX_IF_FEATURE([$1], [--disable-doxygen-$1],
++                                                      [--enable-doxygen-$1]),
++                                  DX_IF_FEATURE([$1], [don't $2], [$2]))],
++                  [
++case "$enableval" in
++#(
++y|Y|yes|Yes|YES)
++    AC_SUBST([DX_FLAG_$1], 1)
++    $3
++;; #(
++n|N|no|No|NO)
++    AC_SUBST([DX_FLAG_$1], 0)
++;; #(
++*)
++    AC_MSG_ERROR([invalid value '$enableval' given to doxygen-$1])
++;;
++esac
++], [
++AC_SUBST([DX_FLAG_$1], [DX_IF_FEATURE([$1], 1, 0)])
++$4
++])
++if DX_TEST_FEATURE([$1]); then
++    $5
++    :
++fi
++if DX_TEST_FEATURE([$1]); then
++    AM_CONDITIONAL(DX_COND_$1, :)
++    $6
++    :
++else
++    AM_CONDITIONAL(DX_COND_$1, false)
++    $7
++    :
++fi
++])
++
++## -------------- ##
++## Public macros. ##
++## -------------- ##
++
++# DX_XXX_FEATURE(DEFAULT_STATE)
++# -----------------------------
++AC_DEFUN([DX_DOXYGEN_FEATURE], [AC_DEFUN([DX_FEATURE_doc],  [$1])])
++AC_DEFUN([DX_MAN_FEATURE],     [AC_DEFUN([DX_FEATURE_man],  [$1])])
++AC_DEFUN([DX_HTML_FEATURE],    [AC_DEFUN([DX_FEATURE_html], [$1])])
++AC_DEFUN([DX_CHM_FEATURE],     [AC_DEFUN([DX_FEATURE_chm],  [$1])])
++AC_DEFUN([DX_CHI_FEATURE],     [AC_DEFUN([DX_FEATURE_chi],  [$1])])
++AC_DEFUN([DX_RTF_FEATURE],     [AC_DEFUN([DX_FEATURE_rtf],  [$1])])
++AC_DEFUN([DX_XML_FEATURE],     [AC_DEFUN([DX_FEATURE_xml],  [$1])])
++AC_DEFUN([DX_XML_FEATURE],     [AC_DEFUN([DX_FEATURE_xml],  [$1])])
++AC_DEFUN([DX_PDF_FEATURE],     [AC_DEFUN([DX_FEATURE_pdf],  [$1])])
++AC_DEFUN([DX_PS_FEATURE],      [AC_DEFUN([DX_FEATURE_ps],   [$1])])
++
++# DX_INIT_DOXYGEN(PROJECT, [CONFIG-FILE], [OUTPUT-DOC-DIR])
++# ---------------------------------------------------------
++# PROJECT also serves as the base name for the documentation files.
++# The default CONFIG-FILE is "Doxyfile" and OUTPUT-DOC-DIR is "doxygen-doc".
++AC_DEFUN([DX_INIT_DOXYGEN], [
++
++# Files:
++AC_SUBST([DX_PROJECT], [$1])
++AC_SUBST([DX_CONFIG], [ifelse([$2], [], Doxyfile, [$2])])
++AC_SUBST([DX_DOCDIR], [ifelse([$3], [], doxygen-doc, [$3])])
++
++# Environment variables used inside doxygen.cfg:
++DX_ENV_APPEND(SRCDIR, $srcdir)
++DX_ENV_APPEND(PROJECT, $DX_PROJECT)
++DX_ENV_APPEND(DOCDIR, $DX_DOCDIR)
++DX_ENV_APPEND(VERSION, $PACKAGE_VERSION)
++
++# Doxygen itself:
++DX_ARG_ABLE(doc, [generate any doxygen documentation],
++            [],
++            [],
++            [DX_REQUIRE_PROG([DX_DOXYGEN], doxygen)
++             DX_REQUIRE_PROG([DX_PERL], perl)],
++            [DX_ENV_APPEND(PERL_PATH, $DX_PERL)])
++
++# Dot for graphics:
++DX_ARG_ABLE(dot, [generate graphics for doxygen documentation],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [DX_REQUIRE_PROG([DX_DOT], dot)],
++            [DX_ENV_APPEND(HAVE_DOT, YES)
++             DX_ENV_APPEND(DOT_PATH, [`DX_DIRNAME_EXPR($DX_DOT)`])],
++            [DX_ENV_APPEND(HAVE_DOT, NO)])
++
++# Man pages generation:
++DX_ARG_ABLE(man, [generate doxygen manual pages],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [],
++            [DX_ENV_APPEND(GENERATE_MAN, YES)],
++            [DX_ENV_APPEND(GENERATE_MAN, NO)])
++
++# RTF file generation:
++DX_ARG_ABLE(rtf, [generate doxygen RTF documentation],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [],
++            [DX_ENV_APPEND(GENERATE_RTF, YES)],
++            [DX_ENV_APPEND(GENERATE_RTF, NO)])
++
++# XML file generation:
++DX_ARG_ABLE(xml, [generate doxygen XML documentation],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [],
++            [DX_ENV_APPEND(GENERATE_XML, YES)],
++            [DX_ENV_APPEND(GENERATE_XML, NO)])
++
++# (Compressed) HTML help generation:
++DX_ARG_ABLE(chm, [generate doxygen compressed HTML help documentation],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [DX_REQUIRE_PROG([DX_HHC], hhc)],
++            [DX_ENV_APPEND(HHC_PATH, $DX_HHC)
++             DX_ENV_APPEND(GENERATE_HTML, YES)
++             DX_ENV_APPEND(GENERATE_HTMLHELP, YES)],
++            [DX_ENV_APPEND(GENERATE_HTMLHELP, NO)])
++
++# Seperate CHI file generation.
++DX_ARG_ABLE(chi, [generate doxygen seperate compressed HTML help index file],
++            [DX_CHECK_DEPEND(chm, 1)],
++            [DX_CLEAR_DEPEND(chm, 1)],
++            [],
++            [DX_ENV_APPEND(GENERATE_CHI, YES)],
++            [DX_ENV_APPEND(GENERATE_CHI, NO)])
++
++# Plain HTML pages generation:
++DX_ARG_ABLE(html, [generate doxygen plain HTML documentation],
++            [DX_CHECK_DEPEND(doc, 1) DX_CHECK_DEPEND(chm, 0)],
++            [DX_CLEAR_DEPEND(doc, 1) DX_CLEAR_DEPEND(chm, 0)],
++            [],
++            [DX_ENV_APPEND(GENERATE_HTML, YES)],
++            [DX_TEST_FEATURE(chm) || DX_ENV_APPEND(GENERATE_HTML, NO)])
++
++# PostScript file generation:
++DX_ARG_ABLE(ps, [generate doxygen PostScript documentation],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [DX_REQUIRE_PROG([DX_LATEX], latex)
++             DX_REQUIRE_PROG([DX_MAKEINDEX], makeindex)
++             DX_REQUIRE_PROG([DX_DVIPS], dvips)
++             DX_REQUIRE_PROG([DX_EGREP], egrep)])
++
++# PDF file generation:
++DX_ARG_ABLE(pdf, [generate doxygen PDF documentation],
++            [DX_CHECK_DEPEND(doc, 1)],
++            [DX_CLEAR_DEPEND(doc, 1)],
++            [DX_REQUIRE_PROG([DX_PDFLATEX], pdflatex)
++             DX_REQUIRE_PROG([DX_MAKEINDEX], makeindex)
++             DX_REQUIRE_PROG([DX_EGREP], egrep)])
++
++# LaTeX generation for PS and/or PDF:
++if DX_TEST_FEATURE(ps) || DX_TEST_FEATURE(pdf); then
++    AM_CONDITIONAL(DX_COND_latex, :)
++    DX_ENV_APPEND(GENERATE_LATEX, YES)
++else
++    AM_CONDITIONAL(DX_COND_latex, false)
++    DX_ENV_APPEND(GENERATE_LATEX, NO)
++fi
++
++# Paper size for PS and/or PDF:
++AC_ARG_VAR(DOXYGEN_PAPER_SIZE,
++           [a4wide (default), a4, letter, legal or executive])
++case "$DOXYGEN_PAPER_SIZE" in
++#(
++"")
++    AC_SUBST(DOXYGEN_PAPER_SIZE, "")
++;; #(
++a4wide|a4|letter|legal|executive)
++    DX_ENV_APPEND(PAPER_SIZE, $DOXYGEN_PAPER_SIZE)
++;; #(
++*)
++    AC_MSG_ERROR([unknown DOXYGEN_PAPER_SIZE='$DOXYGEN_PAPER_SIZE'])
++;;
++esac
++
++#For debugging:
++#echo DX_FLAG_doc=$DX_FLAG_doc
++#echo DX_FLAG_dot=$DX_FLAG_dot
++#echo DX_FLAG_man=$DX_FLAG_man
++#echo DX_FLAG_html=$DX_FLAG_html
++#echo DX_FLAG_chm=$DX_FLAG_chm
++#echo DX_FLAG_chi=$DX_FLAG_chi
++#echo DX_FLAG_rtf=$DX_FLAG_rtf
++#echo DX_FLAG_xml=$DX_FLAG_xml
++#echo DX_FLAG_pdf=$DX_FLAG_pdf
++#echo DX_FLAG_ps=$DX_FLAG_ps
++#echo DX_ENV=$DX_ENV
++])
