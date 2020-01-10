@@ -56,7 +56,7 @@ libp2p applications.
 
 %prep
 %setup -q -n %{name}
-%apply_patches
+%autopatch -p1
 %{_bindir}/autoreconf -f --verbose -i
 
 %build
