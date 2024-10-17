@@ -8,7 +8,7 @@ Version:        1.0
 Release:        %mkrel 20
 Epoch:          0
 Summary:        P2P List Library
-URL:            http://peerguardian.sourceforge.net/
+URL:            https://peerguardian.sourceforge.net/
 Source0:        %{name}-%{version}.tar.bz2
 Patch0:         %{name}-unix.patch
 Patch1:		listtools-exception-ambiguity.patch
