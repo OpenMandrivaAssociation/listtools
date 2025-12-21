@@ -15,6 +15,7 @@ Patch1:		listtools-exception-ambiguity.patch
 Patch2:		listtools-missing-include.patch
 License:        BSD
 Group:          System/Libraries
+BuildRequires:	make
 BuildRequires:  doxygen
 BuildRequires:  boost-devel
 BuildRequires:  mysql-devel
